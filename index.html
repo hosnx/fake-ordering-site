@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f3ec" />
+  <title>好味茶餐廳｜手機點餐</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">手機自助點餐</p>
+      <h1>好味茶餐廳</h1>
+    </div>
+    <div class="table-badge">枱號 <strong>08</strong></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <span class="status-dot"></span>
+        現正營業
+      </div>
+      <h2>想食咩？慢慢揀。</h2>
+      <p>所有訂單只作示範，不會真的送出或付款。</p>
+    </section>
+
+    <nav class="category-tabs" aria-label="餐牌分類">
+      <button class="tab active" data-category="all">全部</button>
+      <button class="tab" data-category="rice">飯類</button>
+      <button class="tab" data-category="noodles">麵類</button>
+      <button class="tab" data-category="snacks">小食</button>
+      <button class="tab" data-category="drinks">飲品</button>
+    </nav>
+
+    <section id="menu" class="menu-grid" aria-live="polite"></section>
+  </main>
+
+  <button id="cartButton" class="cart-button" aria-label="打開購物車">
+    <span>購物車</span>
+    <strong id="cartCount">0</strong>
+    <span id="cartTotal">$0</span>
+  </button>
+
+  <div id="cartDrawer" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+    <section class="drawer">
+      <div class="drawer-handle"></div>
+      <div class="drawer-header">
+        <div>
+          <p class="eyebrow">枱號 08</p>
+          <h2 id="cartTitle">你的訂單</h2>
+        </div>
+        <button id="closeCart" class="icon-button" aria-label="關閉">×</button>
+      </div>
+
+      <div id="cartItems" class="cart-items"></div>
+
+      <div class="order-options">
+        <label>
+          備註
+          <textarea id="orderNote" placeholder="例如：少飯、走冰、不要蔥"></textarea>
+        </label>
+      </div>
+
+      <div class="summary">
+        <div><span>小計</span><strong id="subtotal">$0</strong></div>
+        <div><span>加一服務費</span><strong id="serviceCharge">$0</strong></div>
+        <div class="grand-total"><span>合計</span><strong id="grandTotal">$0</strong></div>
+      </div>
+
+      <button id="placeOrder" class="primary-button" disabled>確認落單</button>
+    </section>
+  </div>
+
+  <div id="successModal" class="success-backdrop hidden" role="dialog" aria-modal="true">
+    <section class="success-card">
+      <div class="success-icon">✓</div>
+      <p class="eyebrow">模擬訂單已建立</p>
+      <h2>落單成功！</h2>
+      <p>訂單編號：<strong id="orderNumber">A108</strong></p>
+      <p class="muted">此網站只作示範，沒有連接餐廳、付款或後台系統。</p>
+      <button id="newOrder" class="primary-button">再落一張單</button>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
