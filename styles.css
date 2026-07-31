@@ -18,3 +18,126 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
 .addon-footer{position:fixed;right:0;bottom:0;left:0;z-index:3;display:grid;grid-template-columns:auto minmax(180px,360px);justify-content:center;gap:18px;align-items:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(255,253,249,.97);backdrop-filter:blur(14px)}
 .addon-footer small{display:block;color:var(--muted)}.addon-footer strong{font-size:1.25rem}.addon-confirm{min-height:52px}@keyframes addonIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
 @media(min-width:680px){.addon-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* 首次開啟新品廣告 */
+.launch-ad-backdrop{
+  position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
+  padding:18px;background:rgba(24,18,14,.7);backdrop-filter:blur(8px)
+}
+.launch-ad-card{
+  position:relative;width:min(100%,430px);overflow:hidden;border-radius:28px;
+  background:var(--card);box-shadow:0 24px 70px rgba(20,14,10,.35);
+  animation:adPop .26s ease-out
+}
+.launch-ad-close{
+  position:absolute;top:12px;right:12px;z-index:3;width:42px;height:42px;border:0;
+  border-radius:50%;background:rgba(255,255,255,.94);color:var(--text);
+  font-size:1.8rem;line-height:1;box-shadow:0 6px 20px rgba(0,0,0,.16)
+}
+.launch-ad-image-wrap{position:relative;height:300px;overflow:hidden;background:#2d1d15}
+.launch-ad-image{width:100%;height:100%;object-fit:cover;display:block}
+.launch-ad-image-wrap::after{
+  content:"";position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,rgba(24,12,7,.42))
+}
+.launch-ad-copy{padding:20px}
+.launch-ad-badge{
+  display:inline-block;margin-bottom:10px;padding:7px 11px;border-radius:999px;
+  background:#fff0dd;color:var(--accent-dark);font-size:.82rem;font-weight:800
+}
+.launch-ad-copy h2{margin-bottom:8px;font-size:1.8rem}
+.launch-ad-copy p{margin-bottom:18px;color:var(--muted);line-height:1.55}
+.launch-ad-bottom{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.launch-ad-bottom small{display:block;color:var(--muted)}
+.launch-ad-bottom strong{font-size:1.7rem;color:var(--accent)}
+.launch-ad-order{min-height:50px}
+.steam{
+  position:absolute;z-index:2;bottom:72px;width:18px;height:90px;border-radius:50%;
+  border-left:4px solid rgba(255,255,255,.72);filter:blur(2px);opacity:0;
+  animation:steamRise 2.8s ease-in-out infinite
+}
+.steam-one{left:38%;animation-delay:0s}.steam-two{left:52%;animation-delay:.8s}.steam-three{left:64%;animation-delay:1.5s}
+@keyframes steamRise{
+  0%{transform:translateY(18px) translateX(0) scale(.75);opacity:0}
+  25%{opacity:.72}
+  70%{opacity:.28}
+  100%{transform:translateY(-58px) translateX(14px) scale(1.25);opacity:0}
+}
+@keyframes adPop{from{opacity:0;transform:scale(.93) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@media(max-width:420px){
+  .launch-ad-image-wrap{height:255px}
+  .launch-ad-card{border-radius:24px}
+}
+
+/* v5 真實食物圖片 */
+.food-image,.addon-emoji{overflow:hidden;background:#eee5dc}
+.food-image img,.addon-emoji img{width:100%;height:100%;display:block;object-fit:cover}
+.menu-card .food-image{min-height:94px}
+.selected-main .food-image{min-height:72px}
+.addon-emoji{width:56px;height:56px}
+
+/* v6 圖片校正：固定正方形、避免拉伸及歪斜 */
+.food-image,
+.addon-emoji {
+  aspect-ratio: 1 / 1;
+}
+
+.food-image img,
+.addon-emoji img {
+  object-position: center;
+  transform: none;
+}
+
+/* v7 套餐層級購物車 */
+.cart-group{
+  border-bottom:1px solid var(--line);
+  padding-bottom:10px;
+}
+.cart-group .cart-row{
+  border-bottom:0;
+  padding-bottom:6px;
+}
+.cart-addon-children{
+  display:grid;
+  gap:7px;
+  margin:0 0 4px 16px;
+  padding-left:12px;
+  border-left:2px solid var(--line);
+}
+.cart-addon-child{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  color:var(--muted);
+  font-size:.88rem;
+}
+.cart-addon-child strong{
+  color:var(--accent);
+}
+.meal-label{
+  display:inline-block;
+  margin-left:5px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#fff0e8;
+  color:var(--accent-dark);
+  font-size:.7rem;
+  vertical-align:2px;
+}
+
+/* v8 購物車逐項價錢 */
+.cart-meal-subtotal{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:9px 0 2px 28px;
+  padding-top:9px;
+  border-top:1px dashed var(--line);
+  font-size:.9rem;
+}
+.cart-meal-subtotal span{
+  color:var(--muted);
+}
+.cart-meal-subtotal strong{
+  color:var(--text);
+}
