@@ -10,11 +10,19 @@ const menuItems=[
 {id:8,name:"紅豆冰",description:"紅豆、淡奶、碎冰",price:26,category:"drinks",image:"red_bean_ice.jpg"}];
 
 const cart=[];
+// 本次頁面的記憶體紀錄；不使用 localStorage、sessionStorage 或後台。
+const orderHistory=[];
+let editingMealKey=null;
 let currentCategory="all";
 let selectedMainItem=null;
 let selectedSnackId=null;
 let selectedDrinkId=null;
 let cartSequence=1;
+const defaultDrinkOptions=()=>({sweetness:"正常甜",ice:"正常冰"});
+const drinkOptionsText=options=>`${(options||defaultDrinkOptions()).sweetness}・${(options||defaultDrinkOptions()).ice}`;
+let selectedDrinkOptions=defaultDrinkOptions();
+let drinkDraft=null;
+let drinkContext=null;
 
 const menu=document.querySelector("#menu");
 const cartButton=document.querySelector("#cartButton");
@@ -34,6 +42,83 @@ const confirmAddon=document.querySelector("#confirmAddon");
 const launchAd=document.querySelector("#launchAd");
 const closeLaunchAd=document.querySelector("#closeLaunchAd");
 const adOrderNow=document.querySelector("#adOrderNow");
+const historyButton=document.querySelector("#historyButton");
+const historyDrawer=document.querySelector("#historyDrawer");
+const historyItems=document.querySelector("#historyItems");
+const drinkPage=document.querySelector("#drinkPage");
+const networkLoading=document.querySelector("#networkLoading");
+let networkPending=false;
+let replayingNetworkClick=false;
+function randomNetworkDelay(){
+  const chance=Math.random();
+  return chance<0.5?0:chance<0.9?1000:3000;
+}
+// 在按鈕原本的事件處理之前攔截；延遲後只重播一次，不再抽籤。
+document.addEventListener("click",event=>{
+  if(replayingNetworkClick)return;
+  if(networkPending){event.preventDefault();event.stopImmediatePropagation();return}
+  const button=event.target.closest("button");
+  if(!button||button.disabled||button.closest("[inert]"))return;
+  const delay=randomNetworkDelay();
+  if(!delay)return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  networkPending=true;
+  button.setAttribute("aria-busy","true");
+  if(delay===3000)networkLoading.classList.remove("hidden");
+  setTimeout(()=>{
+    networkPending=false;
+    networkLoading.classList.add("hidden");
+    button.removeAttribute("aria-busy");
+    if(!button.isConnected||button.disabled||button.closest("[inert]"))return;
+    button.focus({preventScroll:true});
+    replayingNetworkClick=true;
+    try{button.click()}finally{replayingNetworkClick=false}
+  },delay);
+},true);
+document.addEventListener("keydown",event=>{
+  if(networkPending){event.preventDefault();event.stopImmediatePropagation()}
+},true);
+
+const dialogs=[launchAd,addonPage,cartDrawer,successModal,historyDrawer,drinkPage];
+let activeDialog=null;
+let returnFocus=null;
+const focusableSelector='button:not(:disabled), textarea:not(:disabled), [href], [tabindex="0"]';
+function dialogControls(dialog){
+  return [...dialog.querySelectorAll(focusableSelector)].filter(el=>el.getClientRects().length);
+}
+function openDialog(dialog,trigger=document.activeElement){
+  if(activeDialog) activeDialog.classList.add("hidden");
+  returnFocus=trigger;
+  activeDialog=dialog;
+  dialog.classList.remove("hidden");
+  [...document.body.children].forEach(el=>{el.inert=el!==dialog&&el!==networkLoading});
+  document.body.style.overflow="hidden";
+  dialogControls(dialog)[0]?.focus({preventScroll:true});
+}
+function closeDialog(dialog){
+  dialog.classList.add("hidden");
+  activeDialog=null;
+  [...document.body.children].forEach(el=>{el.inert=false});
+  document.body.style.overflow="";
+  const target=returnFocus?.isConnected&&!returnFocus.closest('.hidden')?returnFocus:document.querySelector('.tab.active');
+  target?.focus({preventScroll:true});
+}
+document.addEventListener("keydown",event=>{
+  if(!activeDialog)return;
+  if(event.key==="Escape"){
+    event.preventDefault();
+    if(activeDialog===drinkPage) closeDrinkPage();
+    else if(activeDialog===addonPage) closeAddonPage();
+    else closeDialog(activeDialog);
+  }else if(event.key==="Tab"){
+    const controls=dialogControls(activeDialog);
+    const first=controls[0],last=controls[controls.length-1];
+    if(!first){event.preventDefault();return}
+    if(event.shiftKey&&(document.activeElement===first||!activeDialog.contains(document.activeElement))){event.preventDefault();last.focus()}
+    else if(!event.shiftKey&&(document.activeElement===last||!activeDialog.contains(document.activeElement))){event.preventDefault();first.focus()}
+  }
+});
 
 const cartFeedback=document.createElement("div");
 cartFeedback.className="cart-feedback";
@@ -64,10 +149,10 @@ function renderMenu(){
     </article>`).join("");
 }
 
-function addStandalone(item){
-  const existing=cart.find(entry=>entry.type==="standalone"&&entry.item.id===item.id);
+function addStandalone(item,options=null){
+  const existing=cart.find(entry=>entry.type==="standalone"&&entry.item.id===item.id&&JSON.stringify(entry.drinkOptions||null)===JSON.stringify(options));
   if(existing) existing.qty+=1;
-  else cart.push({key:`standalone-${item.id}`,type:"standalone",item,qty:1});
+  else cart.push({key:`standalone-${cartSequence++}`,type:"standalone",item,qty:1,drinkOptions:options?{...options}:null});
 }
 
 function addMeal(main,addons){
@@ -111,7 +196,7 @@ function updateCartUI(){
     const children=entry.type==="meal"&&entry.addons.length
       ? `<div class="cart-addon-children">${entry.addons.map(addon=>`
           <div class="cart-addon-child">
-            <span>↳ 加配 ${addon.item.name}</span>
+            <span>↳ 加配 ${addon.item.name}${addon.type==="drink"?`<small class="drink-spec">${drinkOptionsText(addon.drinkOptions)}</small>`:""}</span>
             <strong>${money(addon.price)}</strong>
           </div>`).join("")}</div>`
       : "";
@@ -129,6 +214,8 @@ function updateCartUI(){
         <div>
           <h4>${entry.item.name}${entry.type==="meal"?' <span class="meal-label">套餐</span>':""}</h4>
           ${mainPriceLine}
+          ${entry.item.category==="drinks"?`<small class="drink-spec">${drinkOptionsText(entry.drinkOptions)}</small>`:""}
+          ${entry.type==="meal"?`<button class="edit-meal" data-edit="${entry.key}" aria-label="修改${entry.item.name}套餐">修改套餐</button>`:""}
         </div>
         <div class="quantity-control">
           <button data-change="-1" data-key="${entry.key}" aria-label="減少">−</button>
@@ -188,7 +275,8 @@ function showFeedback(text){
 }
 
 function addonHTML(item,promoPrice,selected){
-  return `<button class="addon-option ${selected?"selected":""}" data-addon="${item.id}" data-category="${item.category}">
+  const drinkSelected=selected&&item.category==="drinks";
+  return `<div class="addon-option-card ${drinkSelected?"drink-selected":""}"><button class="addon-option ${selected?"selected":""}" aria-pressed="${selected}" data-addon="${item.id}" data-category="${item.category}">
     <span class="addon-emoji"><img src="${item.image}" alt="${item.name}"></span>
     <span class="addon-info">
       <h4>${item.name}</h4>
@@ -198,53 +286,131 @@ function addonHTML(item,promoPrice,selected){
       </span>
     </span>
     <span class="select-circle">✓</span>
-  </button>`;
+  </button>${drinkSelected?`<div class="drink-modification"><p class="addon-hint">${drinkOptionsText(selectedDrinkOptions)}</p><button id="modifyDrink" class="edit-meal" data-modify-drink="${item.id}" aria-label="修改${item.name}的甜度及冰量">修改甜度／冰量</button></div>`:""}</div>`;
 }
 
 function renderAddonOptions(){
-  snackOptions.innerHTML=menuItems.filter(item=>item.category==="snacks")
+  const noneOption=(category,selected)=>`<button class="addon-option no-addon ${selected?"selected":""}" aria-pressed="${selected}" data-addon="0" data-category="${category}">
+    <span class="addon-emoji no-addon-icon" aria-hidden="true">−</span>
+    <span class="addon-info"><span class="addon-name">不用加配${category==="snacks"?"小食":"飲品"}</span><span class="addon-hint">不另收費</span></span>
+    <span class="select-circle" aria-hidden="true">✓</span>
+  </button>`;
+  snackOptions.innerHTML=noneOption("snacks",selectedSnackId===null)+menuItems.filter(item=>item.category==="snacks")
     .map(item=>addonHTML(item,12,item.id===selectedSnackId)).join("");
-  drinkOptions.innerHTML=menuItems.filter(item=>item.category==="drinks")
+  drinkOptions.innerHTML=noneOption("drinks",selectedDrinkId===null)+menuItems.filter(item=>item.category==="drinks")
     .map(item=>addonHTML(item,3,item.id===selectedDrinkId)).join("");
 }
+
+function renderDrinkSettings(){
+  for(const [field,values] of Object.entries({sweetness:["正常甜","少甜","半甜","走甜"],ice:["正常冰","少冰","走冰"]})){
+    document.querySelector(`#${field}Options`).innerHTML=values.map(value=>`<button class="drink-choice ${drinkDraft[field]===value?"selected":""}" aria-pressed="${drinkDraft[field]===value}" data-drink-field="${field}" data-drink-value="${value}">${value}</button>`).join("");
+  }
+}
+function openDrinkPage(item,source,trigger=document.activeElement){
+  drinkContext={item,source,trigger,parentReturnFocus:returnFocus,scrollTop:addonPage.scrollTop};
+  drinkDraft={...(source==="addon"?selectedDrinkOptions:defaultDrinkOptions())};
+  document.querySelector("#drinkSelectedItem").innerHTML=`${imageHTML(item)}<div><h3>${item.name}</h3><p>${item.description}</p></div><strong>${money(source==="addon"?3:item.price)}</strong>`;
+  document.querySelector("#drinkConfirm").textContent=source==="addon"?"儲存並返回加配":"加入購物車";
+  document.querySelector("#drinkBack").setAttribute("aria-label",source==="addon"?"取消修改，返回加配":"取消，返回餐牌");
+  document.querySelector("#drinkReturnHint").textContent=source==="addon"?"儲存後返回加配頁；左上角返回會取消本次修改。":"選好後加入購物車；左上角返回會取消，不會加入。";
+  renderDrinkSettings();
+  openDialog(drinkPage,trigger);
+  drinkPage.scrollTop=0;
+}
+function closeDrinkPage(){
+  const context=drinkContext;
+  if(!context)return;
+  if(context.source==="addon"){
+    openDialog(addonPage,context.parentReturnFocus);
+    addonPage.scrollTop=context.scrollTop;
+    document.querySelector("#modifyDrink")?.focus({preventScroll:true});
+  }else closeDialog(drinkPage);
+  drinkContext=null;
+  drinkDraft=null;
+}
+document.querySelector("#drinkBack").addEventListener("click",closeDrinkPage);
+document.querySelector("#drinkConfirm").addEventListener("click",()=>{
+  if(!drinkContext)return;
+  const {item,source}=drinkContext;
+  if(source==="addon"){
+    selectedDrinkOptions={...drinkDraft};
+    renderAddonOptions();
+  }else{
+    addStandalone(item,drinkDraft);
+    updateCartUI();
+    bumpCart();
+    showFeedback(`已單點：${item.name}`);
+  }
+  closeDrinkPage();
+});
 
 function updateAddonTotal(){
   let total=selectedMainItem?selectedMainItem.price:0;
   if(selectedSnackId) total+=12;
   if(selectedDrinkId) total+=3;
-  addonTotal.textContent=money(total);
+  const entry=cart.find(entry=>entry.key===editingMealKey);
+  addonTotal.textContent=money(total*(entry?entry.qty:1));
 }
 
-function openAddonPage(item){
+function openAddonPage(item,trigger=document.activeElement,entry=null){
+  editingMealKey=entry?entry.key:null;
   selectedMainItem=item;
-  selectedSnackId=null;
-  selectedDrinkId=null;
+  selectedSnackId=entry?.addons.find(addon=>addon.type==="snack")?.item.id??null;
+  selectedDrinkId=entry?.addons.find(addon=>addon.type==="drink")?.item.id??null;
+  selectedDrinkOptions={...(entry?.addons.find(addon=>addon.type==="drink")?.drinkOptions||defaultDrinkOptions())};
+  document.querySelector("#addonTitle").textContent=entry?"修改套餐":"為主食加配";
+  confirmAddon.textContent=entry?"儲存修改":"加入購物車";
+  document.querySelector("#addonTotalLabel").textContent=entry?`修改後小計（${entry.qty}份）`:"本次加入";
+  document.querySelector("#editMealHint").textContent=entry?`修改會套用至這組套餐的全部 ${entry.qty} 份。`:"";
   selectedMain.innerHTML=`
     ${imageHTML(item)}
     <div><h3>${item.name}</h3><p>${item.description}</p></div>
     <strong>${money(item.price)}</strong>`;
   renderAddonOptions();
   updateAddonTotal();
-  addonPage.classList.remove("hidden");
-  document.body.style.overflow="hidden";
+  openDialog(addonPage,trigger);
   addonPage.scrollTop=0;
 }
 
 function closeAddonPage(){
-  addonPage.classList.add("hidden");
-  document.body.style.overflow="";
+  const editingKey=editingMealKey;
+  closeDialog(addonPage);
   selectedMainItem=null;
   selectedSnackId=null;
   selectedDrinkId=null;
+  editingMealKey=null;
+  if(editingKey){
+    openDialog(cartDrawer,cartButton);
+    cartItems.querySelector(`[data-edit="${editingKey}"]`)?.focus({preventScroll:true});
+  }
 }
 
 document.addEventListener("click",event=>{
+  const modify=event.target.closest("[data-modify-drink]");
+  if(modify&&selectedDrinkId)openDrinkPage(menuItems.find(item=>item.id===selectedDrinkId),"addon",modify);
+  const choice=event.target.closest("[data-drink-field]");
+  if(choice&&drinkDraft){
+    const {drinkField,drinkValue}=choice.dataset;
+    const allowed={sweetness:["正常甜","少甜","半甜","走甜"],ice:["正常冰","少冰","走冰"]};
+    if(allowed[drinkField]?.includes(drinkValue)){
+      drinkDraft[drinkField]=drinkValue;
+      renderDrinkSettings();
+      drinkPage.querySelector(`[data-drink-field="${drinkField}"][data-drink-value="${drinkValue}"]`).focus({preventScroll:true});
+    }
+  }
+  const edit=event.target.closest("[data-edit]");
+  if(edit){
+    const entry=cart.find(entry=>entry.key===edit.dataset.edit);
+    if(entry?.type==="meal")openAddonPage(entry.item,cartButton,entry);
+  }
   const add=event.target.closest("[data-add]");
   if(add){
     const item=menuItems.find(entry=>entry.id===Number(add.dataset.add));
     if(isMain(item)){
       press(add);
-      setTimeout(()=>openAddonPage(item),170);
+      openAddonPage(item,add);
+    }else if(item.category==="drinks"){
+      openDrinkPage(item,"standalone",add);
     }else{
       press(add);
       animateToCart(add,item);
@@ -258,9 +424,13 @@ document.addEventListener("click",event=>{
   if(addon){
     const id=Number(addon.dataset.addon);
     const category=addon.dataset.category;
-    if(category==="snacks") selectedSnackId=selectedSnackId===id?null:id;
-    if(category==="drinks") selectedDrinkId=selectedDrinkId===id?null:id;
+    if(category==="snacks") selectedSnackId=id||null;
+    if(category==="drinks"){
+      if(selectedDrinkId!==(id||null))selectedDrinkOptions=defaultDrinkOptions();
+      selectedDrinkId=id||null;
+    }
     renderAddonOptions();
+    addonPage.querySelector(`[data-addon="${id}"][data-category="${category}"]`).focus({preventScroll:true});
     updateAddonTotal();
   }
 
@@ -271,6 +441,7 @@ document.addEventListener("click",event=>{
       entry.qty+=Number(quantity.dataset.change);
       if(entry.qty<=0) cart.splice(cart.indexOf(entry),1);
       updateCartUI();
+      (cartItems.querySelector(`[data-key="${quantity.dataset.key}"][data-change="${quantity.dataset.change}"]`)||closeCart).focus({preventScroll:true});
     }
   }
 
@@ -290,37 +461,56 @@ confirmAddon.addEventListener("click",()=>{
     addons.push({item:menuItems.find(item=>item.id===selectedSnackId),price:12,type:"snack"});
   }
   if(selectedDrinkId){
-    addons.push({item:menuItems.find(item=>item.id===selectedDrinkId),price:3,type:"drink"});
+    addons.push({item:menuItems.find(item=>item.id===selectedDrinkId),price:3,type:"drink",drinkOptions:{...selectedDrinkOptions}});
   }
   const mainName=selectedMainItem.name;
-  addMeal(selectedMainItem,addons);
-  closeAddonPage();
+  const editing=cart.find(entry=>entry.key===editingMealKey);
+  if(editing) editing.addons=addons;
+  else addMeal(selectedMainItem,addons);
   updateCartUI();
+  closeAddonPage();
   bumpCart();
-  showFeedback(`已加入 ${mainName} 套餐`);
+  showFeedback(editing?`已修改 ${mainName} 套餐`:`已加入 ${mainName} 套餐`);
 });
 
 closeAddon.addEventListener("click",closeAddonPage);
-cartButton.addEventListener("click",()=>{cartDrawer.classList.remove("hidden");document.body.style.overflow="hidden"});
-closeCart.addEventListener("click",()=>{cartDrawer.classList.add("hidden");document.body.style.overflow=""});
-cartDrawer.addEventListener("click",event=>{if(event.target===cartDrawer){cartDrawer.classList.add("hidden");document.body.style.overflow=""}});
+cartButton.addEventListener("click",()=>openDialog(cartDrawer,cartButton));
+closeCart.addEventListener("click",()=>closeDialog(cartDrawer));
+cartDrawer.addEventListener("click",event=>{if(event.target===cartDrawer)closeDialog(cartDrawer)});
 placeOrder.addEventListener("click",()=>{
-  document.querySelector("#orderNumber").textContent=`A${Math.floor(100+Math.random()*900)}`;
-  cartDrawer.classList.add("hidden");
-  successModal.classList.remove("hidden");
-});
-newOrder.addEventListener("click",()=>{
+  if(!cart.length)return;
+  const order={number:`A${100+orderHistory.length+1}`,time:new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit',hour12:false}),items:JSON.parse(JSON.stringify(cart)),note:document.querySelector("#orderNote").value.trim(),total:getTotals().subtotal};
+  orderHistory.unshift(order);
+  document.querySelector("#orderNumber").textContent=order.number;
   cart.length=0;
   document.querySelector("#orderNote").value="";
   updateCartUI();
-  successModal.classList.add("hidden");
-  document.body.style.overflow="";
+  renderHistory();
+  openDialog(successModal,cartButton);
+});
+newOrder.addEventListener("click",()=>{
+  closeDialog(successModal);
   scrollTo({top:0,behavior:"smooth"});
 });
+document.querySelector("#closeSuccess").addEventListener("click",()=>closeDialog(successModal));
+const escapeHTML=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+function renderHistory(){
+  historyButton.textContent=`已落單紀錄${orderHistory.length?`（${orderHistory.length}）`:""}`;
+  historyItems.innerHTML=orderHistory.length?orderHistory.map(order=>`<article class="history-order">
+    <div class="history-heading"><h3>${order.number}</h3><span>${order.time}</span></div>
+    ${order.items.map(entry=>`<div class="history-item"><div class="history-heading"><strong>${entry.item.name} × ${entry.qty}</strong><strong>${money(entryUnitPrice(entry)*entry.qty)}</strong></div><small>主項 ${money(entry.item.price)} × ${entry.qty}</small>
+      ${entry.item.category==="drinks"?`<div class="drink-spec">${drinkOptionsText(entry.drinkOptions)}</div>`:""}
+      ${entry.type==="meal"?entry.addons.map(addon=>`<div class="history-addon">↳ ${addon.item.name}　${money(addon.price)} × ${entry.qty}${addon.type==="drink"?`<div class="drink-spec">${drinkOptionsText(addon.drinkOptions)}</div>`:""}</div>`).join(""):""}</div>`).join("")}
+    ${order.note?`<p class="history-note">備註：${escapeHTML(order.note)}</p>`:""}
+    <div class="history-heading history-total"><span>訂單合計</span><strong>${money(order.total)}</strong></div>
+  </article>`).join(""):'<div class="empty-cart">暫時未有已落單紀錄。</div>';
+}
+historyButton.addEventListener("click",()=>{renderHistory();openDialog(historyDrawer,historyButton)});
+document.querySelector("#closeHistory").addEventListener("click",()=>closeDialog(historyDrawer));
+historyDrawer.addEventListener("click",event=>{if(event.target===historyDrawer)closeDialog(historyDrawer)});
 
 function hideLaunchAd(){
-  launchAd.classList.add("hidden");
-  document.body.style.overflow="";
+  closeDialog(launchAd);
 }
 closeLaunchAd.addEventListener("click",hideLaunchAd);
 launchAd.addEventListener("click",event=>{if(event.target===launchAd)hideLaunchAd()});
@@ -328,7 +518,7 @@ adOrderNow.addEventListener("click",()=>{
   hideLaunchAd();
   openAddonPage(menuItems.find(item=>item.id===9));
 });
-document.body.style.overflow="hidden";
-
 renderMenu();
 updateCartUI();
+renderHistory();
+openDialog(launchAd,document.querySelector('.tab.active'));

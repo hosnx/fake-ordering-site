@@ -38,7 +38,7 @@
       <p class="eyebrow">手機自助點餐</p>
       <h1>好味茶餐廳</h1>
     </div>
-    <div class="table-badge">枱號 <strong>08</strong></div>
+    <div class="topbar-actions"><button id="historyButton" class="history-button">已落單紀錄</button><div class="table-badge">枱號 <strong>08</strong></div></div>
   </header>
 
   <main>
@@ -75,37 +75,54 @@
 
     <main class="addon-content">
       <section id="selectedMain" class="selected-main"></section>
+      <p id="editMealHint" class="addon-hint" aria-live="polite"></p>
 
       <section class="addon-section">
         <div class="section-heading">
           <div>
             <p class="eyebrow">套餐優惠</p>
-            <h3>加配小食</h3>
+            <h3 id="snackTitle">加配小食</h3>
           </div>
           <span class="deal-badge">每款 $12</span>
         </div>
-        <div id="snackOptions" class="addon-list"></div>
+        <p class="addon-hint">最多選一款，也可選擇不用加配。</p>
+        <div id="snackOptions" class="addon-list" role="group" aria-labelledby="snackTitle"></div>
       </section>
 
       <section class="addon-section">
         <div class="section-heading">
           <div>
             <p class="eyebrow">套餐優惠</p>
-            <h3>加配飲品</h3>
+            <h3 id="drinkTitle">加配飲品</h3>
           </div>
           <span class="deal-badge">每款 $3</span>
         </div>
-        <div id="drinkOptions" class="addon-list"></div>
+        <p class="addon-hint">最多選一款，也可選擇不用加配。</p>
+        <div id="drinkOptions" class="addon-list" role="group" aria-labelledby="drinkTitle"></div>
       </section>
     </main>
 
     <footer class="addon-footer">
       <div>
-        <small>本次加入</small>
+        <small id="addonTotalLabel">本次加入</small>
         <strong id="addonTotal">$0</strong>
       </div>
       <button id="confirmAddon" class="primary-button addon-confirm">加入購物車</button>
     </footer>
+  </div>
+
+  <div id="drinkPage" class="addon-page hidden" role="dialog" aria-modal="true" aria-labelledby="drinkPageTitle">
+    <header class="addon-topbar">
+      <button id="drinkBack" class="back-button" aria-label="取消，返回上一頁">←</button>
+      <div><p class="eyebrow">飲品口味</p><h2 id="drinkPageTitle">修改甜度／冰量</h2></div>
+    </header>
+    <main class="addon-content">
+      <section id="drinkSelectedItem" class="selected-main"></section>
+      <p id="drinkReturnHint" class="addon-hint"></p>
+      <section class="addon-section"><h3 id="sweetnessTitle">甜度</h3><div id="sweetnessOptions" class="drink-choices" role="group" aria-labelledby="sweetnessTitle"></div></section>
+      <section class="addon-section"><h3 id="iceTitle">冰量</h3><div id="iceOptions" class="drink-choices" role="group" aria-labelledby="iceTitle"></div></section>
+    </main>
+    <footer class="drink-footer"><button id="drinkConfirm" class="primary-button">儲存並返回加配</button></footer>
   </div>
 
   <button id="cartButton" class="cart-button" aria-label="打開購物車">
@@ -143,17 +160,30 @@
     </section>
   </div>
 
-  <div id="successModal" class="success-backdrop hidden" role="dialog" aria-modal="true">
+  <div id="successModal" class="success-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="successTitle">
     <section class="success-card">
+      <button id="closeSuccess" class="icon-button success-close" aria-label="關閉成功提示，返回餐牌">×</button>
       <div class="success-icon">✓</div>
       <p class="eyebrow">模擬訂單已建立</p>
-      <h2>落單成功！</h2>
+      <h2 id="successTitle">落單成功！</h2>
       <p>訂單編號：<strong id="orderNumber">A108</strong></p>
       <p class="muted">此網站只作示範，沒有連接餐廳、付款或後台系統。</p>
       <button id="newOrder" class="primary-button">再落一張單</button>
+      <a class="coffee-button" href="https://buymeacoffee.com/hx23657670v" target="_blank" rel="noopener noreferrer" aria-label="請我一杯咖啡（另開贊助頁）"><span class="coffee-heart" aria-hidden="true">♥</span>請我一杯咖啡</a>
     </section>
   </div>
 
+  <div id="historyDrawer" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+    <section class="drawer">
+      <div class="drawer-header"><div><p class="eyebrow">枱號 08</p><h2 id="historyTitle">已落單紀錄</h2></div><button id="closeHistory" class="icon-button" aria-label="關閉已落單紀錄">×</button></div>
+      <p class="addon-hint">只保留本次頁面的紀錄，重新整理或再次開啟便會清空。</p>
+      <div id="historyItems"></div>
+    </section>
+  </div>
+
+  <div id="networkLoading" class="network-loading hidden" role="status" aria-live="polite" aria-atomic="true">
+    <div class="network-loading-card"><span class="loading-spinner" aria-hidden="true"></span><span>載入中，請稍候…</span></div>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
