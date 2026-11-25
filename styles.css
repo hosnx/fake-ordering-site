@@ -157,6 +157,9 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--accent-dark)
 .success-card{position:relative;padding-top:58px}
 .success-close{position:absolute;top:12px;right:12px}
 .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px}
+.topbar>.topbar-brand{grid-column:1;grid-row:1;min-width:0}
+.topbar>.coffee-button{grid-column:2;grid-row:1;justify-self:center}
+.topbar>.topbar-actions{grid-column:3;grid-row:1}
 .topbar-actions{flex-wrap:nowrap;justify-self:end;min-width:0}
 .topbar-actions>.history-button,.coffee-button{white-space:nowrap;min-height:40px}
 .coffee-button{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 14px;border-radius:12px;background:#ffdd00;color:#26211c;text-decoration:none;font-weight:700;font-size:.88rem}
@@ -177,6 +180,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--accent-dark)
   .topbar{padding:12px 8px;gap:6px}
   .topbar h1{font-size:clamp(.9rem,3.3vw,1.15rem);white-space:nowrap}
   .topbar .eyebrow{font-size:.6rem;letter-spacing:0}
+  .topbar-brand>.eyebrow{display:none}
   .topbar-actions{gap:4px}
   .topbar .history-button{font-size:.7rem;padding:8px 4px;min-height:40px}
   .topbar .table-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:40px;padding:4px;font-size:.65rem;border-radius:10px;white-space:nowrap}
