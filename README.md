@@ -1,7 +1,7 @@
 # 假點餐網站
 
 這是一個純前端示範網站，不會：
-- 收集個人資料
+- 主動傳送姓名、訂單備註或完整訂單至統計服務（網站另使用 GA4 Cookie 及使用量統計，詳見下方說明）
 - 真的送出訂單
 - 連接付款
 - 連接餐廳後台
@@ -69,4 +69,15 @@
 - 甜度：正常甜、少甜、半甜、走甜；冰量：正常冰、少冰、走冰。預設正常甜、正常冰，不另收費。
 - 不同口味的單點飲品分開顯示，相同飲品及口味合併數量。
 - 購物車、套餐修改及本次已落單紀錄均保留並顯示口味。
+
+
+## Google Analytics 4
+- 評估 ID：G-RFP51T35EW。analytics.js 只在 HTTPS 的 hosnx.github.io 上載入；若更換網域，需同步修改條件。
+- 請連同 analytics.js、index.html、script.js、styles.css 上傳並發布。這是直接 gtag.js 接入，毋須再加入 GTM 容器，以免重複計數。
+- 自訂事件：menu_item_added（menu_item、menu_category、order_type）、demo_order_completed（meal_count）、coffee_support_click。模擬落單不作真實 purchase 或收入統計。
+- 加入餐點事件只代表新增主餐或單點的次數，不包含數量按鈕、套餐修改及加配子項，不等於實際售出份數。
+- 不主動傳送備註、整張訂單、口味或姓名。GA4 另有 Cookie 及預設使用資料；網站已加入私隱說明，停用 Google signals 及廣告個人化。
+- 完整訂單仍只保存在當前頁面記憶體，統計資料則在 GA4 留存，兩者不同。
+- 查看方式：登入 analytics.google.com，選此資源，先用報表中的即時頁檢查，之後查看事件報表。自訂參數要做分組報表時，在管理的自訂定義註冊事件範圍維度 menu_item、menu_category、order_type，以及自訂指標 meal_count。
+- 報表權限在 GA4 帳戶與資源存取權管理控制；本網站沒有公開報表或報表讀取金鑰。請由擁有人確認沒有授權其他使用者。
 

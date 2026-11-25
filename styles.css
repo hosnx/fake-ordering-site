@@ -194,3 +194,9 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--accent-dark)
 @keyframes loadingSpin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.loading-spinner{animation:none}}
 
+
+.analytics-notice{margin:0 18px 24px;padding:14px;border:1px solid var(--line);border-radius:16px;color:var(--muted);font-size:.82rem;line-height:1.6}
+.analytics-notice summary{cursor:pointer;font-weight:600}
+.analytics-notice p{margin:12px 0 0}
+.analytics-notice a{color:var(--accent-dark)}
+

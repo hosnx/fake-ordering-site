@@ -10,6 +10,10 @@ const menuItems=[
 {id:8,name:"紅豆冰",description:"紅豆、淡奶、碎冰",price:26,category:"drinks",image:"red_bean_ice.jpg"}];
 
 const cart=[];
+// 統計被阻擋或載入失敗時，點餐仍正常運作。
+function recordUsage(name,params={}){
+  try{if(typeof window.trackUsage==="function")window.trackUsage(name,params)}catch{}
+}
 // 本次頁面的記憶體紀錄；不使用 localStorage、sessionStorage 或後台。
 const orderHistory=[];
 let editingMealKey=null;
@@ -153,6 +157,7 @@ function addStandalone(item,options=null){
   const existing=cart.find(entry=>entry.type==="standalone"&&entry.item.id===item.id&&JSON.stringify(entry.drinkOptions||null)===JSON.stringify(options));
   if(existing) existing.qty+=1;
   else cart.push({key:`standalone-${cartSequence++}`,type:"standalone",item,qty:1,drinkOptions:options?{...options}:null});
+  recordUsage("menu_item_added",{menu_item:item.name,menu_category:item.category,order_type:"standalone"});
 }
 
 function addMeal(main,addons){
@@ -163,6 +168,7 @@ function addMeal(main,addons){
     qty:1,
     addons:addons.map(addon=>({...addon}))
   });
+  recordUsage("menu_item_added",{menu_item:main.name,menu_category:main.category,order_type:"meal"});
 }
 
 function entryUnitPrice(entry){
@@ -387,6 +393,7 @@ function closeAddonPage(){
 
 document.addEventListener("click",event=>{
   const modify=event.target.closest("[data-modify-drink]");
+  if(event.target.closest(".coffee-button"))recordUsage("coffee_support_click");
   if(modify&&selectedDrinkId)openDrinkPage(menuItems.find(item=>item.id===selectedDrinkId),"addon",modify);
   const choice=event.target.closest("[data-drink-field]");
   if(choice&&drinkDraft){
@@ -479,6 +486,7 @@ closeCart.addEventListener("click",()=>closeDialog(cartDrawer));
 cartDrawer.addEventListener("click",event=>{if(event.target===cartDrawer)closeDialog(cartDrawer)});
 placeOrder.addEventListener("click",()=>{
   if(!cart.length)return;
+  recordUsage("demo_order_completed",{meal_count:getTotals().count});
   const order={number:`A${100+orderHistory.length+1}`,time:new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit',hour12:false}),items:JSON.parse(JSON.stringify(cart)),note:document.querySelector("#orderNote").value.trim(),total:getTotals().subtotal};
   orderHistory.unshift(order);
   document.querySelector("#orderNumber").textContent=order.number;
