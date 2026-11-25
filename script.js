@@ -514,6 +514,10 @@ function renderHistory(){
   </article>`).join(""):'<div class="empty-cart">暫時未有已落單紀錄。</div>';
 }
 historyButton.addEventListener("click",()=>{renderHistory();openDialog(historyDrawer,historyButton)});
+document.querySelector("#viewOrderHistory").addEventListener("click",()=>{
+  renderHistory();
+  openDialog(historyDrawer,historyButton);
+});
 document.querySelector("#closeHistory").addEventListener("click",()=>closeDialog(historyDrawer));
 historyDrawer.addEventListener("click",event=>{if(event.target===historyDrawer)closeDialog(historyDrawer)});
 
