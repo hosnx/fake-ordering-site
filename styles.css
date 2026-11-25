@@ -156,8 +156,8 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--accent-dark)
 .edit-meal{display:block;margin-top:8px;font-size:.82rem;padding:6px 10px}
 .success-card{position:relative;padding-top:58px}
 .success-close{position:absolute;top:12px;right:12px}
-.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px}
-.topbar-actions{flex-wrap:nowrap}
+.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px}
+.topbar-actions{flex-wrap:nowrap;justify-self:end;min-width:0}
 .topbar-actions>.history-button,.coffee-button{white-space:nowrap;min-height:40px}
 .coffee-button{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 14px;border-radius:12px;background:#ffdd00;color:#26211c;text-decoration:none;font-weight:700;font-size:.88rem}
 .history-success-button{width:100%;min-height:54px;margin-top:12px;padding:12px 16px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--text);font-weight:700}
@@ -173,8 +173,17 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--accent-dark)
 .history-addon{margin-left:12px}
 .history-note{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);padding:12px;border-radius:12px}
 .history-total{padding-top:12px;border-top:1px dashed var(--line)}
-@media(max-width:420px){.topbar{padding:14px 12px;gap:8px}.topbar h1{font-size:1.2rem}.topbar-actions{gap:5px}.history-button{font-size:.76rem;padding:9px 7px}.table-badge{padding:9px 7px;font-size:.85rem}}
-@media(max-width:600px){.topbar{grid-template-columns:minmax(0,1fr) auto}.topbar>.table-badge{grid-column:2;grid-row:1}.topbar-actions{grid-column:1/-1;grid-row:2;justify-content:flex-end}.topbar-actions>.history-button,.topbar-actions>.coffee-button{font-size:.85rem}}
+@media(max-width:600px){
+  .topbar{padding:12px 8px;gap:6px}
+  .topbar h1{font-size:clamp(.9rem,3.3vw,1.15rem);white-space:nowrap}
+  .topbar .eyebrow{font-size:.6rem;letter-spacing:0}
+  .topbar-actions{gap:4px}
+  .topbar .history-button{font-size:.7rem;padding:8px 4px;min-height:40px}
+  .topbar .table-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:40px;padding:4px;font-size:.65rem;border-radius:10px;white-space:nowrap}
+  .topbar .coffee-button{gap:4px;padding:8px 6px;font-size:.75rem}
+  .topbar .coffee-heart{font-size:1rem}
+  .history-count{display:none}
+}
 
 
 /* 飲品甜度及冰量 */

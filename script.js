@@ -503,7 +503,8 @@ newOrder.addEventListener("click",()=>{
 document.querySelector("#closeSuccess").addEventListener("click",()=>closeDialog(successModal));
 const escapeHTML=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 function renderHistory(){
-  historyButton.textContent=`已落單紀錄${orderHistory.length?`（${orderHistory.length}）`:""}`;
+  historyButton.innerHTML=`已落單紀錄${orderHistory.length?`<span class="history-count">（${orderHistory.length}）</span>`:""}`;
+  historyButton.setAttribute("aria-label",`已落單紀錄，共 ${orderHistory.length} 張`);
   historyItems.innerHTML=orderHistory.length?orderHistory.map(order=>`<article class="history-order">
     <div class="history-heading"><h3>${order.number}</h3><span>${order.time}</span></div>
     ${order.items.map(entry=>`<div class="history-item"><div class="history-heading"><strong>${entry.item.name} × ${entry.qty}</strong><strong>${money(entryUnitPrice(entry)*entry.qty)}</strong></div><small>主項 ${money(entry.item.price)} × ${entry.qty}</small>
